@@ -6,9 +6,15 @@
 
 # Format: some_words
 def format_score(dictation):          # Function name must start with "format_".
-    """ snake <dictation> """         # Docstring defining spoken-form.
+    """ snack <dictation> """         # Docstring defining spoken-form.
     text = str(dictation)             # Get written-form of dictated text.
-    return "_".join(text.split(" "))  # Put underscores between words.
+    return "_".join(text.lower().split(" "))  # Put underscores between words.
+
+# Format: some.words
+def format_chained(dictation):          # Function name must start with "format_".
+    """ chained <dictation> """         # Docstring defining spoken-form.
+    text = str(dictation)             # Get written-form of dictated text.
+    return ".".join(text.lower().split(" "))  # Put underscores between words.
 
 # Format: some_words()
 def format_under_function(dictation):

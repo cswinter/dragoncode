@@ -106,7 +106,7 @@ symbol_map = {
     "plus": " + ",
     "dub plus": "++",
     "minus": " - ",
-    "comma": ", ",
+    "cam": ", ",
     "coal": ": ",
     "equals": " = ",
     "dub equals": " == ",
@@ -442,7 +442,7 @@ mixed_dictation = RuleWrap(None, utils.JoinedSequence(" ", [
     Optional(ListRef(None, prefix_list)),
     Alternative([
         Dictation(),
-        DictListRef(None, letters_dict_list),
+        #DictListRef(None, letters_dict_list),
 #        ListRef(None, saved_word_list),
     ]),
     Optional(ListRef(None, suffix_list)),
@@ -766,7 +766,7 @@ global_environment = MyEnvironment(name="Global",
 ### vim commands
 def vexec(cmd):
     print "^O %s" % cmd
-    return Key("c-o/10") + Text(cmd)
+    return Key("c-o/3") + Text(cmd)
 
 vim_movement = {
     "up": "k",
@@ -785,8 +785,9 @@ vim_contexts = {
 }
 
 vim_action_map = {
-    "<mvmt> [<n>]": vexec("%(n)s%(mvmt)s"),
+    "<mvmt> [<n1>]": vexec("%(n1)s%(mvmt)s"),
     "line <line>": vexec("%(line)sG"),
+    "Position <line>": vexec("%(line)s|"),
     "line end": vexec("A"),
     "line start": vexec("I"),
     "slap above": vexec("O"),
@@ -795,31 +796,38 @@ vim_action_map = {
     "redo": vexec(":redo") + Key("enter"),
     "search": vexec("/"),
     "insert": Text("i"),
-    "cut": vexec("dd"),
-    "cut rest": vexec("D"),
-    "cut [<n>] <mvmt>": vexec("d%(n)s%(mvmt)s"),
+    "cut rest": vexec("D") + vexec("A"),
+    "cut [<n1>] <mvmt>": vexec("d%(n1)s%(mvmt)s"),
     "cut <ctx>": vexec("d%(ctx)s"),
-    "yank": vexec("yy"),
-    "yank [<n>] <mvmt>": vexec("y%(n)s%(mvmt)s"),
+    "cut line": vexec("dd"),
+    "yank [<n1>] <mvmt>": vexec("y%(n1)s%(mvmt)s"),
     "yank <ctx>": vexec("y%(ctx)s"),
+    "yank line": vexec("yy"),
     "paste": vexec("p"),
     "paste before": vexec("P"),
+    "join lines": vexec("J"),
     "again": vexec("."),
-    "comment": vexec("I") + Text("// "),
-    "uncomment": vexec("I") + vexec("d3l"),
     "save file": vexec(":w") + Key("enter"),
     "Scroll center": vexec("zz"),
     "Scroll Top": vexec("zt"),
     "Scroll Bottom": vexec("zb"),
     "Mark Set": vexec("ma"),
     "Mark jump":  vexec("'a"),
-}
+    "Matching": vexec("%%"),
 
+    "Record macro": vexec("qq"),
+    "macro done": vexec("q"),
+    "run macro": vexec("@q"),
+
+    "comment": vexec("I") + Text("// "),
+    "uncomment": vexec("I") + vexec("d3l"),
+    "To do": Text("// TODO(clemens): "),
+}
 
 movement_dict_list = DictList("movement_dict_list", vim_movement)
 vim_contexts_dict_list = DictList("vim_contexts_dict_list", vim_contexts)
 vim_element_map = {
-    "n1": IntegerRef(None, 0, 100),
+    "n1": (IntegerRef(None, 0, 100), 1),
     "n2": IntegerRef(None, 0, 100),
     "line": IntegerRef(None, 1, 10000),
     "mvmt": DictListRef(None, movement_dict_list),
@@ -834,19 +842,32 @@ global_environment = MyEnvironment(name="Vim",
 ### rust
 rust_action_map = {
     "let": "let ",
-    "let mute": "let mut ",
-    "key fun": "fn ",
+    "mute": "mut ",
+    "type":  "type ",
+    "quinn fun": "fn ",
     "boolean": "bool",
-    "key for": "for ",
-    "Key false": "false",
-    "Key true": "true",
+    "quinn for": "for ",
+    "quinn false": "false",
+    "quinn true": "true",
+    "quinn as": "as ",
     "if": "if ",
+    "else if ": "else if ",
+    "else": "else ",
     "in": "in ",
     "dot dot": "..",
-    "key crate": "extern crate ",
+    "quinn crate": "extern crate ",
     "public": "pub ",
     "trait": "trait ",
     "structure": "struct ",
+    "Implement": "impl ",
+    "Enumeration":  "enum ",
+    "module": "mod ",
+    "use": "use ",
+    "loop": "loop {",
+    "continue": "continue;",
+    "quinn break": "break;",
+    "Match":  "match ",
+    "lifetime <char>": "'%(char)s",
 
     "Ref string": "&str",
     "print line": "println!(\"",
@@ -854,19 +875,22 @@ rust_action_map = {
     "deref": "*",
     "vector": "Vec",
     "format": "format!(\"",
+    "panic": "panic!(\"",
 
     "I 32": "i32",
     "you I 32": "u32",
     "I 16": "i16",
-    "you I 16": "u16",
+    "you 16": "u16",
     "I 64": "i64",
-    "you I 64": "u64",
+    "you 64": "u64",
     "I 8": "i8",
-    "you I 8": "u8",
+    "you 8": "u8",
     "i size": "isize",
     "you size": "usize",
     "float 32": "f32",
     "float 64": "f64",
+
+    "box new": "Box::new(",
 }
 
 print "correcting actions"
@@ -875,13 +899,16 @@ rust_action_map = dict((k, Text(v)) for (k,v) in rust_action_map.iteritems())
 global_environment = MyEnvironment(name="Rust",
                                    parent=global_environment,
                                    action_map=rust_action_map,
-                                   element_map=dict())
+                                   element_map=dict({
+                                       "char": DictListRef(None, DictList("letters_map", letters_map)),
+                                   }))
 
 intellij_action_map = {
     "run program": Key("s-f10"),
     "open file <dictation>": Key("cs-n/25") + Text("%(dictation)s"),
     "previous file": Key("c-tab"),
     "Go to definition": Key("c-b"),
+    "Reformat": Key("ca-l"),
 }
 
 global_environment = MyEnvironment(name="intellij",
