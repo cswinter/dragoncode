@@ -785,7 +785,12 @@ vim_contexts = {
 }
 
 vim_action_map = {
-    "<mvmt> [<n1>]": vexec("%(n1)s%(mvmt)s"),
+    "next [<n1>]": vexec("%(n1)sw"),
+    "back [<n1>]": vexec("%(n1)sb"),
+    "up [<n1>]": Key("up:%(n1)s"),
+    "down [<n1>]": Key("down:%(n1)s"),
+    "right [<n1>]": Key("right:%(n1)s"),
+    "left [<n1>]": Key("left:%(n1)s"),
     "line <line>": vexec("%(line)sG"),
     "Position <line>": vexec("%(line)s|"),
     "line end": vexec("A"),
