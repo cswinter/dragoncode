@@ -782,6 +782,7 @@ vim_contexts = {
     "in parens": "i(",
     "in word": "iw",
     "in angles": "i<",
+    "in brackets": "i[",
 }
 
 vim_action_map = {
@@ -905,6 +906,7 @@ rust_action_map = {
     "float 64": "f64",
 
     "box new": "Box::new(",
+    "lit vector": "vec![",
 }
 
 print "correcting actions"
