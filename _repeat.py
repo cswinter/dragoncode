@@ -71,6 +71,7 @@ import dragonfly.log
 #from selenium.webdriver.common.by import By
 
 import _dragonfly_utils as utils
+import _dragonfly_local as local
 #import _eye_tracker_utils as eye_tracker
 #import _linux_utils as linux
 #import _text_utils as text
@@ -139,7 +140,7 @@ symbol_map = {
     "sick quote": "'",
     "dollar": "$",
     "carrot": "^",
-    "arrow": "->",
+    #"arrow": "->",
     "fat arrow": "=>",
     "cons": "::",
     "amper": "&",
@@ -768,6 +769,12 @@ def vexec(cmd):
     print "^O %s" % cmd
     return Key("c-o/3") + Text(cmd)
 
+def vexec2(cmd):
+    if local.PROPER_VIM:
+        return Key("c-backslash, c-o/3") + Text(cmd)
+    else:
+        return vexec(cmd)
+
 vim_movement = {
     "up": "k",
     "down": "j",
@@ -802,17 +809,18 @@ vim_action_map = {
     "last line": vexec("G"),
     "slap above": vexec("O"),
     "slap below": vexec("o"),
-    "undo [<n>]": vexec("%(n)su"),
+    "undo [<n>]": vexec("%(n)su") + vexec("i"),
     "redo": vexec(":redo") + Key("enter"),
-    "search": vexec("/"),
     "insert": Text("i"),
     "cut rest": vexec("D") + vexec("A"),
-    "cut [<n1>] <mvmt>": vexec("d%(n1)s%(mvmt)s"),
+    "cut [<n1>] <mvmt>": vexec2("d%(n1)s%(mvmt)s"),
     "cut <ctx>": vexec("d%(ctx)s"),
     "cut line": vexec("dd"),
+    "delete": vexec("x"),
     "yank [<n1>] <mvmt>": vexec("y%(n1)s%(mvmt)s"),
     "yank <ctx>": vexec("y%(ctx)s"),
     "yank line": vexec("yy"),
+    "yank rest": vexec("y$"),
     "paste": vexec("p"),
     "paste before": vexec("P"),
     "join lines": vexec("J"),
@@ -824,14 +832,38 @@ vim_action_map = {
     "Mark Set": vexec("ma"),
     "Mark jump":  vexec("'a"),
     "Matching": vexec("%%"),
+    "toggle case": vexec("~"),
 
-    "Record macro": vexec("qq"),
+    "search": vexec("/"),
+    "next search": vexec("n"),
+    "previous search": vexec("N"),
+
+    "Record macro": Key("escape, q, q, i"),
     "macro done": vexec("q"),
-    "run macro": vexec("@q"),
+    "run macro": Key("escape, at, q"),
 
     "comment": vexec("I") + Text("// "),
     "uncomment": vexec("I") + vexec("d3l"),
     "To do": Text("// TODO(clemens): "),
+
+    "save buffer": vexec(":w") + Key("enter"),
+    "save all buffers": vexec(":wa") + Key("enter"),
+    "previous buffer": Key("c-o, c-caret"),
+    "close buffer": vexec(":bd") + Key("enter"),
+    "save and quit": vexec(":x") + Key("enter"),
+
+    # Buffergator
+    "list buffers": Key("escape") + Text("\\b"),
+
+    # CtrlP
+    "control P": Key("escape") + Text(":CtrlP ~/src/server/go/src/dropbox") + Key("enter"),
+    "control rust": Key("escape") + Text(":CtrlP ~/src/server/rust") + Key("enter"),
+    "control Python": Key("escape") + Text(":CtrlP ~/src/server/dropbox") + Key("enter"),
+    "control DB ops": Key("escape") + Text(":CtrlP ~/src/server/dbops") + Key("enter"),
+    "recent files": Key("escape") + Text(":CtrlPMRU") + Key("enter"),
+    "control P clear cache": vexec(":CtrlPClearCache") + Key("enter"),
+
+    "open": Key("escape, i"),
 }
 
 movement_dict_list = DictList("movement_dict_list", vim_movement)
@@ -912,12 +944,13 @@ rust_action_map = {
 print "correcting actions"
 rust_action_map = dict((k, Text(v)) for (k,v) in rust_action_map.iteritems())
 
-global_environment = MyEnvironment(name="Rust",
-                                   parent=global_environment,
-                                   action_map=rust_action_map,
-                                   element_map=dict({
-                                       "letter": DictListRef(None, DictList("letters_map", letters_map)),
-                                   }))
+if local.ENABLE_RUST:
+    global_environment = MyEnvironment(name="Rust",
+                                       parent=global_environment,
+                                       action_map=rust_action_map,
+                                       element_map=dict({
+                                           "letter": DictListRef(None, DictList("letters_map", letters_map)),
+                                       }))
 
 intellij_action_map = {
     "run program": Key("s-f10"),
@@ -927,54 +960,118 @@ intellij_action_map = {
     "Reformat": Key("ca-l"),
 }
 
-global_environment = MyEnvironment(name="intellij",
+if local.ENABLE_IDEA:
+    global_environment = MyEnvironment(name="intellij",
+                                       parent=global_environment,
+                                       action_map=intellij_action_map,
+                                       element_map=dict({
+                                           "dictation": Dictation()
+                                       }))
+
+
+
+tmux_action_map = {
+    "left": Key("c-b, left"),
+    "up": Key("c-b, up"),
+    "right": Key("c-b, right"),
+    "down": Key("c-b, down"),
+    "scroll": Key("c-b, lbracket"),
+    "resize <n2> left": Key("c-b") + Text(":resize-pane -L %(n2)s"),
+    "resize <n2> right": Key("c-b") + Text(":resize-pane -R %(n2)s"),
+    "resize <n2> down": Key("c-b") + Text(":resize-pane -D %(n2)s"),
+    "resize <n2> up": Key("c-b") + Text(":resize-pane -U %(n2)s"),
+    "split horizontal": Key("c-b, quote"),
+    "split vertical": Key("c-b, percent"),
+}
+tmux_action_map = dict(("tea max " + k, v) for (k, v) in tmux_action_map.iteritems())
+
+global_environment = MyEnvironment(name="tmux",
                                    parent=global_environment,
-                                   action_map=intellij_action_map,
+                                   action_map=tmux_action_map,
                                    element_map=dict({
-                                       "dictation": Dictation()
+                                       "n2": IntegerRef(None, 0, 100),
                                    }))
-#
-#### Shell command
-#ted
-#shell_command_map = utils.combine_maps({
-#    "git commit": Text("git commit -am "),
-#    "git commit done": Text("git commit -am done "),
-#    "git checkout new": Text("git checkout -b "),
-#    "git reset hard head": Text("git reset --hard HEAD "),
-#    "(soft|sym) link": Text("ln -s "),
-#    "list": Text("ls -l "),
-#    "make dear": Text("mkdir "),
-#    "ps (a UX|aux)": Text("ps aux "),
-#    "kill command": Text("kill "),
-#    "pipe": Text(" | "),
-#    "CH mod": Text("chmod "),
-#    "TK diff": Text("tkdiff "),
-#    "MV": Text("mv "),
-#    "CP": Text("cp "),
-#    "RM": Text("rm "),
-#    "CD": Text("cd "),
-#    "LS": Text("ls "),
-#    "PS": Text("ps "),
-#    "reset terminal": Text("exec bash\n"),
-#    "pseudo": Text("sudo "),
-#    "apt get": Text("apt-get "),
-#}, dict((command, Text(command + " ")) for command in [
-#    "echo",
-#    "grep",
-#    "ssh",
-#    "diff",
-#    "cat",
-#    "man",
-#    "less",
-#    "git status",
-#    "git branch",
-#    "git diff",
-#    "git checkout",
-#    "git stash",
-#    "git stash pop",
-#    "git push",
-#    "git pull",
-#]))
+
+go_action_map = {
+    "go nil": Text("nil"),
+    "function": Text("func "),
+    "type": Text("type "),
+    "structure": Text("struct "),
+    "return": Text("return "),
+    "if": Text("if "),
+    "else": Text("else "),
+    "string": Text("string"),
+    "assign": Text(" := "),
+    "quinn for": Text("for "),
+    "range": Text("range "),
+    "variable": Text("var "),
+    "defer": Text("defer "),
+    "receives": Text("<- "),
+
+    "integer": Text("int"),
+    "unsigned 64": Text("uint64"),
+    "unsigned 32": Text("uint32"),
+    "signed 64": Text("int64"),
+    "signed 32": Text("int32"),
+    "boolean": Text("bool"),
+
+    "go return error": Text("if err != nil {") + Key("enter") + Text("return err")  + Key("enter") + Text("}") + Key("enter"),
+    "is not nil": Text(" != nil"),
+
+    "Go to definition": vexec(":GoDef") + Key("enter"),
+}
+
+global_environment = MyEnvironment(name="Golang",
+                                   parent=global_environment,
+                                   action_map=go_action_map,
+                                   element_map=dict({
+                                   }))
+### Shell command
+shell_command_map = utils.combine_maps({
+    "git commit": Text("git commit -am "),
+    "git commit done": Text("git commit -am done "),
+    "git checkout new": Text("git checkout -b "),
+    "git reset hard head": Text("git reset --hard HEAD "),
+    "(soft|sym) link": Text("ln -s "),
+    "list": Text("ls -l "),
+    "make dear": Text("mkdir "),
+    "ps (a UX|aux)": Text("ps aux "),
+    "kill command": Text("kill "),
+   "pipe": Text(" | "),
+    "CH mod": Text("chmod "),
+    "TK diff": Text("tkdiff "),
+    "MV": Text("mv "),
+    "CP": Text("cp "),
+    "RM": Text("rm "),
+    "CD": Text("cd "),
+    "LS": Text("ls "),
+    "PS": Text("ps "),
+    "reset terminal": Text("exec bash\n"),
+    "pseudo": Text("sudo "),
+    "apt get": Text("apt-get "),
+}, dict((command, Text(command + " ")) for command in [
+    "echo",
+    "grep",
+    "ssh",
+    "diff",
+    "cat",
+    "man",
+    "less",
+    "git status",
+    "git branch",
+    "git diff",
+    "git checkout",
+    "git stash",
+    "git stash pop",
+    "git push",
+    "git pull",
+]))
+
+global_environment = MyEnvironment(name="Shell",
+                                   parent=global_environment,
+                                   action_map=shell_command_map,
+                                   element_map=dict({
+                                   }))
 #run_local_hook("AddShellCommands", shell_command_map)
 #
 #
