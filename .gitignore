@@ -1,3 +1,4 @@
 core
 .idea
 *.pyc
+_dragonfly_local.py

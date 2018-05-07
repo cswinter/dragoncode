@@ -73,6 +73,7 @@ import dragonfly.log
 import _dragonfly_utils as utils
 import _dragonfly_local as local
 import _eye_tracker_utils as eye_tracker
+
 # import _linux_utils as linux
 # import _text_utils as text
 # import _webdriver_utils as webdriver
@@ -781,11 +782,13 @@ def vexec(cmd):
     print "^O %s" % cmd
     return Key("c-o/3") + Text(cmd)
 
+
 def vexec2(cmd):
     if local.PROPER_VIM:
         return Key("c-backslash, c-o/3") + Text(cmd)
     else:
         return vexec(cmd)
+
 
 vim_movement = {
     "up": "k",
@@ -799,6 +802,7 @@ vim_movement = {
 vim_contexts = {
     "in quotes": "i\"",
     "in parens": "i(",
+    "in braces": "i{",
     "in word": "iw",
     "in angles": "i<",
     "in brackets": "i[",
@@ -925,13 +929,14 @@ rust_action_map = {
     "Enumeration": "enum ",
     "module": "mod ",
     "use": "use ",
-    "loop": "loop {",
+    "rust loop": "loop {",
     "while": "while ",
     "continue": "continue;",
     "quinn break": "break;",
     "Match": "match ",
     "lifetime <letter>": "'%(letter)s",
     "lifetime static": "'static",
+    "ref <letter> string": "&'%(letter)s str",
     "self": "self",
     "self type": "Self",
     "macro rules": "macro_rules! ",
@@ -977,8 +982,8 @@ if local.ENABLE_RUST:
                                        }))
 
 intellij_action_map = {
-    "run program": Key("s-f10"),
-    "rerun": Key("c-f5"),
+    "run program": Key("s-f10") + Key("ca-l"),
+    "rerun": Key("c-f5") + Key("ca-l"),
     "open file <dictation>": Key("cs-n/25") + Text("%(dictation)s"),
     "close file": Key("c-f4"),
     "previous file": Key("c-tab"),
@@ -987,6 +992,7 @@ intellij_action_map = {
     "compiler one": Key("a-4/10, ca-down:1"),
     "compiler two": Key("a-4/10, ca-down:2"),
     "rename": Key("s-f6"),
+    "list files": Key("cs-e"),
 }
 
 if local.ENABLE_IDEA:
@@ -996,8 +1002,6 @@ if local.ENABLE_IDEA:
                                        element_map=dict({
                                            "dictation": Dictation()
                                        }))
-
-
 
 tmux_action_map = {
     "left": Key("c-b, left"),
@@ -1044,17 +1048,19 @@ go_action_map = {
     "signed 32": Text("int32"),
     "boolean": Text("bool"),
 
-    "go return error": Text("if err != nil {") + Key("enter") + Text("return err")  + Key("enter") + Text("}") + Key("enter"),
+    "go return error": Text("if err != nil {") + Key("enter") + Text("return err") + Key("enter") + Text("}") + Key(
+        "enter"),
     "is not nil": Text(" != nil"),
 
     "Go to definition": vexec(":GoDef") + Key("enter"),
 }
 
-global_environment = MyEnvironment(name="Golang",
-                                   parent=global_environment,
-                                   action_map=go_action_map,
-                                   element_map=dict({
-                                   }))
+if local.ENABLE_GOLANG:
+    global_environment = MyEnvironment(name="Golang",
+                                       parent=global_environment,
+                                       action_map=go_action_map,
+                                       element_map=dict({
+                                       }))
 ### Shell command
 shell_command_map = utils.combine_maps({
     "git commit": Text("git commit -am "),
@@ -1066,7 +1072,7 @@ shell_command_map = utils.combine_maps({
     "make dear": Text("mkdir "),
     "ps (a UX|aux)": Text("ps aux "),
     "kill command": Text("kill "),
-   "pipe": Text(" | "),
+    "pipe": Text(" | "),
     "CH mod": Text("chmod "),
     "TK diff": Text("tkdiff "),
     "MV": Text("mv "),
@@ -1101,11 +1107,13 @@ global_environment = MyEnvironment(name="Shell",
                                    action_map=shell_command_map,
                                    element_map=dict({
                                    }))
-#run_local_hook("AddShellCommands", shell_command_map)
+# run_local_hook("AddShellCommands", shell_command_map)
 
 gaming_action_map = {
     # Hearthstone
     "click": Function(eye_tracker.move_to_position) + Mouse("left"),
+    "bump": Function(eye_tracker.move_to_position) + Mouse("left/500") + Function(eye_tracker.move_to_position) + Mouse(
+        "left"),
     "face": Mouse("[1935, 365]") + Mouse("left"),
     "done": Mouse("[3125, 961]") + Mouse("left/100") + Mouse("[3125, 1100]"),
     "token": Mouse("[2257, 1667]") + Mouse("left"),
@@ -1121,6 +1129,18 @@ gaming_action_map = {
     "spell": Function(eye_tracker.move_to_position) + Mouse("left/25") + Mouse("[1935, 365]") + Mouse("left"),
     "put left": Function(eye_tracker.move_to_position) + Mouse("left/25") + Mouse("[955, 1146]") + Mouse("left"),
     "put right": Function(eye_tracker.move_to_position) + Mouse("left/25") + Mouse("[2825, 1145]") + Mouse("left"),
+    "reveal pack": Mouse("[793, 1031]") + Mouse("left:down/15") + Mouse("[2243, 1050]") + Mouse("left:up/350")
+                   + Mouse("[2206, 553], left/200")
+                   + Mouse("[2782, 828], left/200")
+                   + Mouse("[2558, 1584], left/200")
+                   + Mouse("[1909, 1529], left/200")
+                   + Mouse("[1667, 789], left/200"),
+    "open pack": Mouse("[793, 1031]") + Mouse("left:down/15") + Mouse("[2243, 1050]") + Mouse("left:up/350")
+                 + Mouse("[2206, 553], left/20")
+                 + Mouse("[2782, 828], left/20")
+                 + Mouse("[2558, 1584], left/20")
+                 + Mouse("[1909, 1529], left/20")
+                 + Mouse("[1667, 789], left/20"),
 
     # Into the Breach,
     "Mech one": Key("a"),
@@ -1170,7 +1190,6 @@ gaming_environment = MyEnvironment(name="Gaming",
                                    action_map=gaming_action_map,
                                    context=(AppContext(title="Into the Breach") | AppContext(title="Hearthstone")))
 
-#
 #### Emacs
 #
 # def Exec(command):

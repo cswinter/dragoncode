@@ -1,3 +1,4 @@
 ENABLE_RUST = True
+ENABLE_GOLANG = False
 ENABLE_IDEA = True
-PROPER_VIM = True
+PROPER_VIM = False
