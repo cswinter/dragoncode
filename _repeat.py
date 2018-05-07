@@ -1067,6 +1067,8 @@ shell_command_map = utils.combine_maps({
     "git commit done": Text("git commit -am done "),
     "git checkout new": Text("git checkout -b "),
     "git reset hard head": Text("git reset --hard HEAD "),
+    "arc diff": Text("arc diff"),
+    "arc land": Text("arc land"),
     "(soft|sym) link": Text("ln -s "),
     "list": Text("ls -l "),
     "make dear": Text("mkdir "),
