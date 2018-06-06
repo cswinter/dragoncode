@@ -51,7 +51,7 @@ def format_upper_score(dictation):
 
 # Format: someWords
 def format_java_method(dictation):
-    """ camel <dictation> """
+    """ mixed <dictation> """
     text = str(dictation)
     words = text.split(" ")
-    return words[0] + "".join(w.capitalize() for w in words[1:])
+    return words[0].lower() + "".join(w[0].upper() + w[1:] for w in words[1:])

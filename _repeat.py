@@ -111,7 +111,7 @@ symbol_map = {
     "cam": ", ",
     "coal": ": ",
     "equals": " = ",
-    "dub equals": " == ",
+    "is same": " == ",
     "not equals": " != ",
     "increment by": " += ",
     "greater than": " > ",
@@ -148,6 +148,8 @@ symbol_map = {
     "dub amper": " && ",
     "pipe": "|",
     "dub pipe": " || ",
+    "op or": " || ",
+    "op and": " && ",
     "sharp": "#",
     "at symbol": "@",
     "question": "?",
@@ -1016,6 +1018,7 @@ tmux_action_map = {
     "split horizontal": Key("c-b, quote"),
     "split vertical": Key("c-b, percent"),
 }
+
 tmux_action_map = dict(("tea max " + k, v) for (k, v) in tmux_action_map.iteritems())
 
 global_environment = MyEnvironment(name="tmux",
@@ -1067,8 +1070,10 @@ shell_command_map = utils.combine_maps({
     "git commit done": Text("git commit -am done "),
     "git checkout new": Text("git checkout -b "),
     "git reset hard head": Text("git reset --hard HEAD "),
+    "git fetch and rebase": Text("git fetch && git rebase"),
     "arc diff": Text("arc diff"),
     "arc land": Text("arc land"),
+    "arc queue status": Text("arc queue-status"),
     "(soft|sym) link": Text("ln -s "),
     "list": Text("ls -l "),
     "make dear": Text("mkdir "),
@@ -1114,8 +1119,7 @@ global_environment = MyEnvironment(name="Shell",
 gaming_action_map = {
     # Hearthstone
     "click": Function(eye_tracker.move_to_position) + Mouse("left"),
-    "bump": Function(eye_tracker.move_to_position) + Mouse("left/500") + Function(eye_tracker.move_to_position) + Mouse(
-        "left"),
+    "bump": Function(eye_tracker.move_to_position) + Mouse("left/500") + Function(eye_tracker.move_to_position) + Mouse("left"),
     "face": Mouse("[1935, 365]") + Mouse("left"),
     "done": Mouse("[3125, 961]") + Mouse("left/100") + Mouse("[3125, 1100]"),
     "token": Mouse("[2257, 1667]") + Mouse("left"),
