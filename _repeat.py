@@ -827,7 +827,7 @@ vim_action_map = {
     "last line": vexec("G"),
     "slap above": vexec("O"),
     "slap below": vexec("o"),
-    "undo [<n>]": vexec("%(n)su") + vexec("i"),
+    "undo [<n>]": vexec("%(n)su") + vexec("h") + vexec("l"),
     "redo": vexec(":redo") + Key("enter"),
     "insert": Text("i"),
     "sort [<n1>] <mvmt>": vexec("V%(n1)s%(mvmt)s:sort") + Key("enter"),
@@ -882,6 +882,7 @@ vim_action_map = {
     "control rust": Key("escape") + Text(":CtrlP ~/src/server/rust") + Key("enter"),
     "control Python": Key("escape") + Text(":CtrlP ~/src/server/dropbox") + Key("enter"),
     "control DB ops": Key("escape") + Text(":CtrlP ~/src/server/dbops") + Key("enter"),
+    "control configs": Key("escape") + Text(":CtrlP ~/src/server/configs") + Key("enter"),
     "recent files": Key("escape") + Text(":CtrlPMRU") + Key("enter"),
     "control P clear cache": vexec(":CtrlPClearCache") + Key("enter"),
 
@@ -1043,6 +1044,7 @@ go_action_map = {
     "variable": Text("var "),
     "defer": Text("defer "),
     "receives": Text("<- "),
+    "constant": Text("const"),
 
     "integer": Text("int"),
     "unsigned 64": Text("uint64"),
@@ -1050,6 +1052,7 @@ go_action_map = {
     "signed 64": Text("int64"),
     "signed 32": Text("int32"),
     "boolean": Text("bool"),
+    "go place": Text("%%v"),
 
     "go return error": Text("if err != nil {") + Key("enter") + Text("return err") + Key("enter") + Text("}") + Key(
         "enter"),
@@ -1067,6 +1070,8 @@ if local.ENABLE_GOLANG:
 ### Shell command
 shell_command_map = utils.combine_maps({
     "git commit": Text("git commit -am "),
+    "git fixup": Text("git fixup"),
+    "git fixup dash a": Text("git fixup -a"),
     "git commit done": Text("git commit -am done "),
     "git checkout new": Text("git checkout -b "),
     "git reset hard head": Text("git reset --hard HEAD "),
