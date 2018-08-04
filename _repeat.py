@@ -2,6 +2,7 @@
 # This file is a command-module for Dragonfly.
 # (c) Copyright 2008 by Christo Butcher
 # (c) Copyright 2015 by James Stout
+# (c) Copyright 2018 by Clemens Winter
 # Licensed under the LGPL, see <http://www.gnu.org/licenses/>
 
 
@@ -628,7 +629,7 @@ final_rule = utils.create_rule("FinalRule",
 #  recognition in the "extras" argument: the sequence of
 #  actions and the number of times to repeat them.
 class RepeatRule(CompoundRule):
-    def __init__(self, name, command, terminal_command, context):
+    def __init__(self, name, command, terminal_command):
         # Here we define this rule's spoken-form and special elements. Note that
         # nested_repetitions is the only one that contains Repetitions, and it
         # is not itself repeated. This is for performance purposes. We also
@@ -660,7 +661,7 @@ class RepeatRule(CompoundRule):
         }
 
         CompoundRule.__init__(self, name=name, spec=spec,
-                              extras=extras, defaults=defaults, exported=True, context=context)
+                              extras=extras, defaults=defaults, exported=True)
 
     # This method gets called when this rule is recognized.
     # Arguments:
@@ -680,12 +681,12 @@ class RepeatRule(CompoundRule):
         for i in range(count):
             for action in sequence:
                 action.execute()
-                Pause("5").execute()
+                # Pause("5").execute()
             if nested_repetitions:
                 nested_repetitions.execute()
             for action in dictation_sequence:
                 action.execute()
-                Pause("5").execute()
+                # Pause("5").execute()
             if dictation:
                 dictation.execute()
             if terminal_command:
@@ -705,8 +706,8 @@ class RepeatRule(CompoundRule):
 
 class Environment(object):
     """Environment where voice commands can be spoken. Combines grammar and context
-    and adds hierarchy. When installed, will produce a top-level rule for each
-    environment.
+    and adds hierarchy. When installed, will produce a mutually-exclusive top-level
+    grammar for each environment.
     """
 
     def __init__(self,
@@ -732,15 +733,21 @@ class Environment(object):
     def add_child(self, child):
         self.children.append(child)
 
-    def install(self, grammar, exported_rule_factory):
+    def install(self, exported_rule_factory):
+        grammars = []
         exclusive_context = self.context
         for child in self.children:
-            child.install(grammar, exported_rule_factory)
+            grammars.extend(child.install(exported_rule_factory))
+            child.install(exported_rule_factory)
             exclusive_context = utils.combine_contexts(exclusive_context, ~child.context)
         rule_map = dict([(key, RuleRef(
             rule=utils.create_rule(self.name + "_" + key, action_map, element_map)) if action_map else Empty())
                          for (key, (action_map, element_map)) in self.environment_map.items()])
-        grammar.add_rule(exported_rule_factory(self.name + "_exported", exclusive_context, **rule_map))
+        grammar = Grammar(self.name, context=exclusive_context)
+        grammar.add_rule(exported_rule_factory(self.name + "_exported", **rule_map))
+        grammar.load()
+        grammars.append(grammar)
+        return grammars
 
 
 class MyEnvironment(object):
@@ -765,11 +772,11 @@ class MyEnvironment(object):
     def add_child(self, child):
         self.environment.add_child(child.environment)
 
-    def install(self, grammar):
-        def create_exported_rule(name, context, command, terminal_command):
-            return RepeatRule(name, command or Empty(), terminal_command or Empty(), context)
+    def install(self):
+        def create_exported_rule(name, command, terminal_command):
+            return RepeatRule(name, command or Empty(), terminal_command or Empty())
 
-        self.environment.install(grammar, create_exported_rule)
+        return self.environment.install(create_exported_rule)
 
 
 ### Global
@@ -828,7 +835,7 @@ vim_action_map = {
     "slap above": vexec("O"),
     "slap below": vexec("o"),
     "undo [<n>]": vexec("%(n)su") + vexec("h") + vexec("l"),
-    "redo": vexec(":redo") + Key("enter"),
+    "redo": vexec(":redo") + Key("enter/25"),
     "insert": Text("i"),
     "sort [<n1>] <mvmt>": vexec("V%(n1)s%(mvmt)s:sort") + Key("enter"),
     "sort <line> line": vexec("V%(line)sG:sort") + Key("enter"),
@@ -841,6 +848,8 @@ vim_action_map = {
     "delete": vexec("x"),
     "yank [<n1>] <mvmt>": vexec("y%(n1)s%(mvmt)s"),
     "yank <ctx>": vexec("y%(ctx)s"),
+    "yank fomble <char>": vexec("yf%(char)s"),
+    "yank bamble <char>": vexec("yF%(char)s"),
     "yank line": vexec("yy"),
     "yank rest": vexec("y$"),
     "paste": vexec("p"),
@@ -952,9 +961,12 @@ rust_action_map = {
     "vector": "Vec",
     "format": "format!(\"",
     "panic": "panic!(\"",
+    "unimplemented": "unimplemented!(\"",
     "debug format": "{:?}",
     "okay": "Ok(",
     "try": "try!(",
+
+    "rust feature": "#[cfg(feature = \"",
 
     "I 64": "i64",
     "I 32": "i32",
@@ -987,7 +999,8 @@ if local.ENABLE_RUST:
 intellij_action_map = {
     "run program": Key("s-f10") + Key("ca-l"),
     "rerun": Key("c-f5") + Key("ca-l"),
-    "open file <dictation>": Key("cs-n/25") + Text("%(dictation)s"),
+    "open file [<dictation>]": Key("csa-f/25") + Text("%(dictation)s"),
+    "open class [<dictation>]": Key("c-n/25") + Text("%(dictation)s"),
     "close file": Key("c-f4"),
     "previous file": Key("c-tab"),
     "Go to definition": Key("c-b"),
@@ -996,6 +1009,8 @@ intellij_action_map = {
     "compiler two": Key("a-4/10, ca-down:2"),
     "rename": Key("s-f6"),
     "list files": Key("cs-e"),
+    "line numbers": Key("escape/25") + Text(":set rnu") + Key("enter/25") + Text(":set nu") + Key(
+        "enter/25"),
 }
 
 if local.ENABLE_IDEA:
@@ -1101,7 +1116,7 @@ shell_command_map = utils.combine_maps({
     "grep",
     "ssh",
     "diff",
-    "cat",
+    # "cat",
     "man",
     "less",
     "git status",
@@ -1969,11 +1984,11 @@ gaming_environment = MyEnvironment(name="Gaming",
 # -------------------------------------------------------------------------------
 # Populate and load the grammar.
 
-grammar = Grammar("repeat")  # Create this module's grammar.
-global_environment.install(grammar)
+grammars = global_environment.install()
+
 # TODO Figure out either how to integrate this with the repeating rule or move out.
 # grammar.add_rule(linux_rule)
-grammar.load()
+# grammar.load()
 
 #
 ##-------------------------------------------------------------------------------
@@ -2053,10 +2068,9 @@ print("Loaded _repeat.py")
 # -------------------------------------------------------------------------------
 # Unload function which will be called by NatLink.
 def unload():
-    global grammar, timer  # , server, server_thread, timer
-    if grammar:
+    global grammars, timer  # , server, server_thread, timer
+    for grammar in grammars:
         grammar.unload()
-        grammar = None
     # eye_tracker.disconnect()
     #    webdriver.quit_driver()
     timer.stop()

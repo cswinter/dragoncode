@@ -8,7 +8,7 @@
 def format_score(dictation):          # Function name must start with "format_".
     """ snack <dictation> """         # Docstring defining spoken-form.
     text = str(dictation)             # Get written-form of dictated text.
-    return "_".join(text.lower().split(" "))  # Put underscores between words.
+    return ("_".join(text.lower().split(" "))).replace("-", "_")  # Put underscores between words.
 
 # Format: some.words
 def format_chained(dictation):          # Function name must start with "format_".
@@ -26,7 +26,7 @@ def format_under_function(dictation):
 def format_studley(dictation):
     """ studley <dictation> """
     text = str(dictation)
-    words = [word.capitalize() for word in text.split(" ")]
+    words = [word[0].upper() + word[1:] for word in text.split(" ")]
     return "".join(words)
 
 # Format: somewords
